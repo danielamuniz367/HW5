@@ -1,106 +1,122 @@
 #include <bits/stdc++.h>
-#define lli long long int
-#define mod 1000000007
-#define pb push_back
-#define INF 1e18
-#define SIZE 100010
-
 using namespace std;
+#define SIZE 100010 //define size
+vector<int> adj[SIZE]; //define a vector (adjacency matrix)
+int babyfaces[SIZE];
+bool visited[SIZE];
 
-vector<lli> adj[SIZE];
-lli babyface[SIZE]; //to check which are to be included in babyfaces
-bool visited[SIZE]; //for dfs only
-
-//performing dfs to check if the graph creted in the rivalries
-//is bipartite or not
-//if yes we get the answer ,else its impossible
-
-bool dfs(lli s, lli parent) {
-	visited[s] = 1;
-	lli i, v;
-	babyface[s] = 1 - babyface[parent]; //assigning the nodes value fiffernt to its
-										//parents if babyface[parent] = 0,babyface[s] = 1
-										//if babyface[parent] = 1,babyface[s] = 0
-
-	for (i = 0; i < adj[s].size(); i++) {
-		v = adj[s][i];
-		if (!visited[v]) {
-			dfs(v, s);
+//definition of the function bfs()
+//checks if the graph of rivalries list is bipartite or not
+bool bfs(int pos, int parent) {
+	//make the position visited.
+	visited[pos] = 1;
+	int i, value;
+	//assign the node value different to its parent
+	babyfaces[pos] = 1 - babyfaces[parent];
+	//iterate the adjacency matrix
+	for (i = 0; i < adj[pos].size(); i++) {
+		value = adj[pos][i];
+		//if the value is not visted call
+		//function bfs() recursively.
+		if (!visited[value]) {
+			bfs(value, pos);
 		} else {
-			if (babyface[v] == babyface[s]) //if two adjancent nodes have same value graph is not bipartite
-				return 0;                                     //return false
+			//if two adjacent nodes have same value graph is                //not bipartite
+			if (babyfaces[value] == babyfaces[pos])
+				return false;
 		}
 	}
-	return 1;                                     //return true
+	return true;
+
 }
 
-int main() {
-
-	lli n, i, j, k, u, v, r;
-	string str, rival1, rival2;
-
-	map<string, lli> m;                        //for assigning each name a index
-
-	cin >> n;
-	string names[n + 1];                       //for storing the name with index
-
-	for (i = 1; i <= n; i++) {
-		cin >> str;
-		m[str] = i;
-		names[i] = str;
-	}
-
-	cin >> r;
-
-	for (i = 1; i <= r; i++) {
-		cin >> rival1 >> rival2;
-		u = m[rival1];
-		v = m[rival2];                           //getting indeices of the names
-		adj[u].pb(v);
-		adj[v].pb(u);                                //adding edges to the graph
-	}
-
-	memset(babyface, 0, sizeof babyface);    //make all wrestlers as heels first
-	memset(visited, 0, sizeof visited);        //for dfs all nodes are unvisited
-
-	babyface[0] = 0;    //dummy parent for all roots in the connected components
-						//for assigning the nodes
-
+//definition of the main function
+//takes command line arguments
+int main(int argc, char *args[]) {
+	//declare the variables
+	int n, j, k, u, v, r;
+	string babyname, rival1, rival2;
 	bool possible = 1;
-	//perform dfs for all the connected components and get a possible answer
-	for (i = 1; i <= n; i++) {
-		if (visited[i])
-			continue;
-		possible = dfs(i, 0);
-		if (!possible)         //if not bipartite the partitioning is impossible
-			break;
-	}
-
-	if (!possible) {
-		cout << "Impossible " << endl;
+	//create a map variable
+	map<string, int> data;
+	//open the input text file
+	ifstream infile(args[1]);
+	//Check if the file exists.
+	if (!infile) {
+		cout << "Error opening file\n";
 		return 0;
 	}
-
-	//for storing the names of the two types
-	vector<string> babyfaces, heels;
-
-	for (i = 1; i <= n; i++) {
-		if (babyface[i])
-			babyfaces.pb(names[i]);
-		else
-			heels.pb(names[i]);
+	//read the the number of wrestlers.
+	infile >> n;
+	//create a string array
+	string names[n + 1];
+	//read the names and store in map
+	for (int i = 0; i < n; i++) {
+		infile >> babyname;
+		data[babyname] = i;
+		names[i] = babyname;
 	}
+	//read the the number of rivalries
+	infile >> r;
+	//read the rivalries listed in pairs.
+	for (int i = 0; i < r; i++) {
+		infile >> rival1 >> rival2;
+		//get the index value of rival1
+		u = data[rival1];
+		//get the index value of rival2
+		v = data[rival2];
+		//adding edges to the graph
+		adj[u].push_back(v);
+		adj[v].push_back(u);
+	}
+	//close the input file.
+	infile.close();
+	//gets str, the pointer to the destination string.
+	//make all wrestlers as heels first
+	memset(babyfaces, 0, sizeof babyfaces);
+	//for bfs all nodes are unvisited
+	memset(visited, 0, sizeof visited);
+	//assign all values to 0.
+	babyfaces[0] = 0;
 
-	cout << "Yes\n";
-	cout << "Babyfaces:";
-	for (i = 0; i < babyfaces.size(); i++)
-		cout << babyfaces[i] << " ";
-	cout << endl;
+	//perform bfs for all the connected components
+	for (int i = 0; i < n; i++) {
+		if (visited[i])
+			continue;
+		//call the function bfs().
+		possible = bfs(i, 0);
+		//if not bipartite the partitioning is impossible
+		if (!possible)
+			break;
+	}
+	//print No, if impossible.
+	if (!possible) {
+		cout << "No" << endl;
+	} else {
+		//create vectors.
+		vector<string> faces, heels;
 
-	cout << "Heels:";
-	for (i = 0; i < heels.size(); i++)
-		cout << heels[i] << " ";
-	cout << endl;
+		for (int i = 0; i < n; i++) {
+			//push the names if babyfaces are true
+			if (babyfaces[i])
+				faces.push_back(names[i]);
+			else
+				//otherwise push heels
+				heels.push_back(names[i]);
+		}
+		cout << "Yes\n";
+		cout << "Babyfaces: ";
+		//print the baby faces
+		for (int i = 0; i < faces.size(); i++)
+			cout << faces[i] << " ";
+		cout << endl;
+		//print the heels.
+		cout << "Heels: ";
+		for (int i = heels.size() - 1; i >= 0; i--)
+			cout << heels[i] << " ";
+		cout << endl;
+
+	}
 
 	return 0;
 }
